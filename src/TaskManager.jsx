@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
-export default function TaskManager() {
+export default function TaskManager({ user }) {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState("all");
 
   async function fetchTasks() {
     const { data, error } = await supabase
@@ -48,6 +49,19 @@ export default function TaskManager() {
     };
   }, []);
 
+  function getFilteredTasks() {
+    if (filter === "active") {
+      return tasks.filter((task) => !task.completed);
+    }
+
+    if (filter === "completed") {
+      return tasks.filter((task) => task.completed);
+    }
+
+    return tasks;
+  }
+  const filteredTasks = getFilteredTasks();
+
   async function addTask(event) {
     event.preventDefault();
 
@@ -63,6 +77,7 @@ export default function TaskManager() {
       {
         title: title.trim(),
         description: description.trim(),
+        user_id: user.id,
       },
     ]);
 
@@ -170,18 +185,48 @@ export default function TaskManager() {
           </div>
 
           <span className="task-count">
-            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+            {filteredTasks.length}{" "}
+            {filteredTasks.length === 1 ? "task" : "tasks"}
           </span>
         </div>
 
-        {tasks.length === 0 ? (
+        <div className="task-filters">
+          <button
+            type="button"
+            className={
+              filter === "all" ? "filter-button active" : "filter-button"
+            }
+            onClick={() => setFilter("all")}>
+            All
+          </button>
+
+          <button
+            type="button"
+            className={
+              filter === "active" ? "filter-button active" : "filter-button"
+            }
+            onClick={() => setFilter("active")}>
+            Active
+          </button>
+
+          <button
+            type="button"
+            className={
+              filter === "completed" ? "filter-button active" : "filter-button"
+            }
+            onClick={() => setFilter("completed")}>
+            Completed
+          </button>
+        </div>
+
+        {filteredTasks.length === 0 ? (
           <div className="empty-state">
             <h3>No tasks yet</h3>
             <p>Add your first task using the form above.</p>
           </div>
         ) : (
           <div className="task-grid">
-            {tasks.map((task) => (
+            {filteredTasks.map((task) => (
               <article
                 className={`task-card ${
                   task.completed ? "task-card--completed" : ""
